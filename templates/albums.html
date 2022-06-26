@@ -1,0 +1,40 @@
+<head>
+    <title>Create an album!</title>
+</head>
+    <body>
+        <div class="title">
+            <h1>Create an album on Photoshare</h1>
+        </div>
+            <form method="post" enctype="multipart/form-data" action="/albumscreate">
+                <label for="album_name">Album Name:</label>
+                <input type="text" name="album_name" required='true' /><br />
+                <input type="submit" value="Create" />
+            </form>
+    </body>
+<head>
+    <title>Delete an album</title>
+
+</head>
+    <body>
+        <div class="title">
+            <h1>Delete an album on Photoshare</h1>
+        </div>
+            <form method="post" enctype="multipart/form-data" action="/albumsdelete">
+                <label for="album_name">Album Name:</label>
+                <input type="text" name="album_name" required='true' /><br />
+                <input type="submit" value="Delete" />
+            </form>
+    </body>
+
+{% if message %}
+    <h4>{{message}}!</h4>
+{% endif %}    
+{% if albums %}
+<h2>Here are your albums</h2>
+    <ul>
+    {% for album in albums %}
+        <li>{{album}}</li>
+    {% endfor %}
+    </ul>
+{% endif %}
+

@@ -13,7 +13,6 @@ import flask
 from flask import Flask, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
 import flask_login
-
 #for image uploading		
 import os, base64
 
@@ -23,7 +22,7 @@ app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'cs460'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'rooted!!lel4'
 app.config['MYSQL_DATABASE_DB'] = 'photoshare'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
@@ -173,8 +172,8 @@ def protected():
 
 def getUserAlbums(uid):
 	cursor=conn.cursor()
-	cursor.execute("	SELECT album_id,name FROM albums WHERE user_id = '{0}'".format(uid))
-	return cursor.fetchall()[0]
+	cursor.execute("SELECT album_id,album_name FROM albums WHERE user_id = '{0}'".format(uid))
+	return cursor.fetchall()
 
 
 def getFriends(uid):
@@ -204,9 +203,13 @@ def upload_file():
 		uid = getUserIdFromEmail(flask_login.current_user.id)
 		imgfile = request.files['photo']
 		caption = request.form.get('caption')
-		photo_data =imgfile.read()
+		imgdata =imgfile.read()
+		album_id=request.form.get('album_id')
+		#tags=request.form.get('tags')
+		#Add tags
+		# tags=tags.split(' ')
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Pictures (imgdata, user_id, caption) VALUES (%s, %s, %s )''', (photo_data, uid, caption))
+		cursor.execute('''INSERT INTO Pictures (imgdata, caption, album_id) VALUES (%s, %s, %s )''', (imgdata, caption, album_id))
 		conn.commit()
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(uid), base64=base64)
 	#The method is GET so we return a  HTML form to upload the a photo.
@@ -214,6 +217,44 @@ def upload_file():
 		return render_template('upload.html')
 #end photo uploading code
 
+@app.route('/albums', methods=['GET'])
+@flask_login.login_required
+def albumpage():
+	uid = getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('albums.htm	l', albums=getUserAlbums(uid))
+
+@app.route('/albumscreate', methods=['POST'])
+@flask_login.login_required
+def create_album():
+	if request.method=='POST':
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+		album_name=request.form.get('album_name')
+		cursor=conn.cursor()
+		cursor.execute('''INSERT INTO Albums (album_name,user_id) VALUES(%s, %s)''',(album_name,uid))
+		conn.commit()
+		return render_template('albums.html',name=flask_login.current_user.id,message='Album created!', albums=getUserAlbums(uid), base64=base64)
+	else:
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+		return render_template('albums.html', albums=getUserAlbums(uid))
+
+
+@app.route('/albumsdelete', methods=['POST'])
+@flask_login.login_required
+def delete_album():
+	if request.method=='POST':
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+		album_name=request.form.get('album_name')
+		cursor=conn.cursor()
+		cursor.execute("DELETE FROM Albums a where a.album_name='{0}' and a.user_id='{1}'".format(album_name,uid))
+		conn.commit()
+		return render_template('albums.html',name=flask_login.current_user.id,message='Album deleted!', albums=getUserAlbums(uid), base64=base64)
+	else:
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+		return render_template('albums.html', albums=getUserAlbums(uid))
+
+
+
+#end photo uploading code
 
 #default page
 @app.route("/", methods=['GET'])
@@ -221,14 +262,22 @@ def hello():
 	return render_template('hello.html', message='Welecome to Photoshare')
 
 #friends page
-@app.route("/getfriends")
-@flask.login.login_required
-def getFriendsPage():
-	uid=getUserIdFromEmail(flask_login.current_user.id)
-	return render_template('friends.html',friends=getFriends(uid))
+#@app.route("/getfriends")
+#@flask.login.login_required
+#def getFriendsPage():
+	#uid=getUserIdFromEmail(flask_login.current_user.id)
+	#return render_template('friends.html',friends=getFriends(uid))
 
-
-
+#add friend
+#@app.route("/addfriend")
+#@flask_login.login_required
+#def add_friend():
+	#friendid=request.args.get('values')
+	#uid=getUserIdFromEmail(flask_login.current_user.id)
+	#cursor=conn.cursor()
+	#cursor.execute("INSERT INTO friends(user_id,friend_id) Values ('{0}','{1}'".format(uid,friendid))
+	#conn.commit()
+	#return render_template('hello.html', message='Friend Added')>
 
 if __name__ == "__main__":
 	#this is invoked when in the shell  you run
