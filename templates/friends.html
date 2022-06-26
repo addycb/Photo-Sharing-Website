@@ -1,10 +1,9 @@
 <!doctype html>
-{% if photos %} 
+{% if friends %} 
 <h2>Here are your friends</h2>
     <ul>
     {% for friend in friendlist %}
-        <li>{{photo[2]}}<br>
-        <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}'/></li>
+        <li>{{friend[2]}} </li>
     {% endfor %}
     </ul>
 {% endif %}
