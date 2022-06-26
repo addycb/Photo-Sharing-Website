@@ -14,7 +14,7 @@ from flask import Flask, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
 import flask_login
 
-#for image uploading
+#for image uploading		
 import os, base64
 
 mysql = MySQL()
@@ -123,13 +123,18 @@ def register_user():
 	try:
 		email=request.form.get('email')
 		password=request.form.get('password')
+		firstname=request.form.get('firstname')
+		lastname=request.form.get('lastname')
+		dob=request.form.get('date_of_birth')
+		hometown=request.form.get('hometown')
+		gender=request.form.get('gender')
 	except:
 		print("couldn't find all tokens") #this prints to shell, end users will not see this (all print statements go to shell)
 		return flask.redirect(flask.url_for('register'))
 	cursor = conn.cursor()
 	test =  isEmailUnique(email)
 	if test:
-		print(cursor.execute("INSERT INTO Users (email, password) VALUES ('{0}', '{1}')".format(email, password)))
+		print(cursor.execute("INSERT INTO Users (email, password, firstname, lastname, date_of_birth, hometown, gender) VALUES ('{0}', '{1}','{2}', '{3}','{4}', '{5}',)".format(email, password)))
 		conn.commit()
 		#log user in
 		user = User()
@@ -158,12 +163,33 @@ def isEmailUnique(email):
 		return False
 	else:
 		return True
-#end login code
+#end login code	
 
 @app.route('/profile')
 @flask_login.login_required
 def protected():
 	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile")
+
+
+def getUserAlbums(uid):
+	cursor=conn.cursor()
+	cursor.execute("	SELECT album_id,name FROM albums WHERE user_id = '{0}'".format(uid))
+	return cursor.fetchall()[0]
+
+
+def getFriends(uid):
+	cursor=conn.cursor()
+	cursor.execute("SELECT u.firstname,u.listname FROM users u WHERE u.user_id IN(select f.friend_id FROM friends f where f.user_id='{0}' and f.friend_id = u.user_id)".format(uid))
+	return cursor.fetchall()
+
+def getPicturesbyAlbum(album_id):
+	cursor=conn.cursor()
+	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures WHERE album_id = '{0}'".format(album_id))
+	return cursor.fetchall() #NOTE return a list of tuples, [(imgdata, pid, caption), ...]
+
+
+#def getPicturebyTag(tag):
+#def showPopularTags():
 
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML
@@ -193,6 +219,15 @@ def upload_file():
 @app.route("/", methods=['GET'])
 def hello():
 	return render_template('hello.html', message='Welecome to Photoshare')
+
+#friends page
+@app.route("/getfriends")
+@flask.login.login_required
+def getFriendsPage():
+	uid=getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('friends.html',friends=getFriends(uid))
+
+
 
 
 if __name__ == "__main__":
