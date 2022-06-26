@@ -146,7 +146,7 @@ def register_user():
 
 def getUsersPhotos(uid):
 	cursor = conn.cursor()
-	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures WHERE user_id = '{0}'".format(uid))
+	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures p,Albums a WHERE p.album_id=a.album_id AND a.user_id='{0}'".format(uid))
 	return cursor.fetchall() #NOTE return a list of tuples, [(imgdata, pid, caption), ...]
 
 def getUserIdFromEmail(email):
@@ -167,7 +167,8 @@ def isEmailUnique(email):
 @app.route('/profile')
 @flask_login.login_required
 def protected():
-	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile")
+	uid=getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('hello.html', name=flask_login.current_user.id, photos=getUsersPhotos(uid),message="Here's your profile",base64=base64)
 
 
 def getUserAlbums(uid):
@@ -214,14 +215,15 @@ def upload_file():
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(uid), base64=base64)
 	#The method is GET so we return a  HTML form to upload the a photo.
 	else:
-		return render_template('upload.html')
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+		return render_template('upload.html',albums=getUserAlbums(uid))
 #end photo uploading code
 
 @app.route('/albums', methods=['GET'])
 @flask_login.login_required
 def albumpage():
 	uid = getUserIdFromEmail(flask_login.current_user.id)
-	return render_template('albums.htm	l', albums=getUserAlbums(uid))
+	return render_template('albums.html', albums=getUserAlbums(uid))
 
 @app.route('/albumscreate', methods=['POST'])
 @flask_login.login_required
@@ -251,6 +253,8 @@ def delete_album():
 	else:
 		uid = getUserIdFromEmail(flask_login.current_user.id)
 		return render_template('albums.html', albums=getUserAlbums(uid))
+
+
 
 
 

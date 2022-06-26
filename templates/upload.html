@@ -18,3 +18,13 @@
                 <input type="submit" value="Upload" />
             </form>
     </body>
+{% if albums %}
+<h2>Here are your albums</h2>
+    <ul>
+    {% for album in albums %}
+        <li>{{album}}</li>
+    {% endfor %}
+    </ul>
+{% endif %}
+
+
