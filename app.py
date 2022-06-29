@@ -179,13 +179,18 @@ def getUserAlbums(uid):
 
 def getFriends(uid):
 	cursor=conn.cursor()
-	cursor.execute("SELECT u.firstname,u.listname FROM users u WHERE u.user_id IN(select f.friend_id FROM friends f where f.user_id='{0}' and f.friend_id = u.user_id)".format(uid))
+	cursor.execute("SELECT u.firstname,u.lastname FROM users u WHERE u.user_id IN(select f.friend2_id FROM friends f where f.friend1_id='{0}')".format(uid))
 	return cursor.fetchall()
 
 def getPicturesbyAlbum(album_id):
 	cursor=conn.cursor()
 	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures WHERE album_id = '{0}'".format(album_id))
 	return cursor.fetchall() #NOTE return a list of tuples, [(imgdata, pid, caption), ...]
+
+
+
+
+
 
 
 #def getPicturebyTag(tag):
@@ -266,11 +271,11 @@ def hello():
 	return render_template('hello.html', message='Welecome to Photoshare')
 
 #friends page
-#@app.route("/getfriends")
-#@flask.login.login_required
-#def getFriendsPage():
-	#uid=getUserIdFromEmail(flask_login.current_user.id)
-	#return render_template('friends.html',friends=getFriends(uid))
+@app.route("/friends", methods=['GET'])
+@flask_login.login_required
+def getFriendsPage():
+	uid=getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('friends.html',friends=getFriends(uid))
 
 #add friend
 #@app.route("/addfriend")
