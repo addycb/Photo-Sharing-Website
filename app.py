@@ -22,7 +22,7 @@ app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'rooted!!lel4'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'root'
 app.config['MYSQL_DATABASE_DB'] = 'photoshare'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
@@ -179,18 +179,13 @@ def getUserAlbums(uid):
 
 def getFriends(uid):
 	cursor=conn.cursor()
-	cursor.execute("SELECT u.firstname,u.lastname FROM users u WHERE u.user_id IN(select f.friend2_id FROM friends f where f.friend1_id='{0}')".format(uid))
+	cursor.execute("SELECT u.firstname,u.listname FROM users u WHERE u.user_id IN(select f.friend_id FROM friends f where f.user_id='{0}' and f.friend_id = u.user_id)".format(uid))
 	return cursor.fetchall()
 
 def getPicturesbyAlbum(album_id):
 	cursor=conn.cursor()
 	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures WHERE album_id = '{0}'".format(album_id))
 	return cursor.fetchall() #NOTE return a list of tuples, [(imgdata, pid, caption), ...]
-
-
-
-
-
 
 
 #def getPicturebyTag(tag):
@@ -260,6 +255,129 @@ def delete_album():
 		return render_template('albums.html', albums=getUserAlbums(uid))
 
 
+# Rank
+@app.route('/hot', methods=['GET'])
+def hot():
+	return """<ul>
+		<li><a href="/hot/user">User</a></li>
+		<li><a href="/hot/tag">Tag</a></li>
+	</ul>"""
+
+@app.route('/hot/<cate>', methods=['GET'])
+def hot_cate(cate):
+	if cate == "user":
+		cursor = conn.cursor()
+		cursor.execute("SELECT users.email FROM `pictures` "
+					   "LEFT JOIN users ON users.user_id = pictures.user_id "
+					   "LEFT JOIN comments ON users.user_id = comments.user_id "
+					   "GROUP BY users.user_id ORDER BY COUNT(users.user_id) DESC LIMIT 10")
+		emails = [x[0] for x in cursor.fetchall()]
+		return render_template("hot.html", emails=emails)
+	elif cate == "tag":
+		cursor = conn.cursor()
+		cursor.execute("SELECT tags.tag_id, tag FROM tags "
+					   "JOIN tagged_picture on tags.tag_id=tagged_picture.tag_id "
+					   "GROUP BY tags.tag_id ORDER BY count(tags.tag_id) desc")
+		tags = [{"tag": tag[1], "tag_id": tag[0]} for tag in cursor.fetchall()]
+		return render_template("hot.html", tags=tags)
+	else:
+		raise
+
+@app.route('/search', methods=["GET"])
+def search():
+	tags = flask.request.args.get("name")
+	if tags:
+		tags = tags.lower().split()
+		picture_ids = []
+		items = dict()
+		cursor = conn.cursor()
+		for tag in tags:
+			cursor.execute(f"SELECT pictures.picture_id, imgdata, caption FROM pictures "
+						   f"join tagged_picture on pictures.picture_id=tagged_picture.picture_id "
+						   f"join tags on tags.tag_id=tagged_picture.tag_id where "
+						   f"tags.tag='{tag}'")
+			for picture_id, imgdata, caption in cursor.fetchall():
+				imgdata = base64.b64encode(imgdata).decode("ascii")
+				items[picture_id] = {
+					"picture_id": picture_id,
+					"imgdata": imgdata,
+					"caption": caption
+				}
+				picture_ids.append(picture_id)
+
+		pictures = []
+		for pic_id, pic_num in Counter(picture_ids).items():
+			if pic_num == len(tags):
+				pictures.append(items[pic_id])
+
+		message = f"A total of {len(pictures)} images were searched"
+		return render_template("browse_by_picture.html", items=pictures, message=message)
+	else:
+		return """<form action='/search' method='GET'>
+						<input type='text' name='name' value=''></input>
+						<input type='submit' name='submit' value="search"></input>
+					</form><a href='/'>Home</a>"""
+
+
+"""Friends start"""
+# Friend home page, including my friends, friend recommendation, user search
+@app.route('/friend', methods=['GET'])
+@flask_login.login_required
+def friend_index():
+	cursor = conn.cursor()
+	# my friends
+	cursor.execute(f"SELECT t2.email AS friend_eamil FROM users "
+				   f"INNER JOIN friends_with AS t1 ON users.user_id = t1.user_id "
+				   f"INNER JOIN users AS t2 ON t1.friend_uid = t2.user_id "
+				   f"WHERE users.email='{flask_login.current_user.id}'")
+
+	friend_emails = [x[0] for x in cursor.fetchall()]
+
+	# you like
+	recommend = []
+	for email in friend_emails:
+		cursor.execute(f"SELECT t2.email AS friend_eamil FROM users "
+					   f"INNER JOIN friends_with AS t1 ON users.user_id = t1.user_id "
+					   f"INNER JOIN users AS t2 ON t1.friend_uid = t2.user_id "
+					   f"WHERE users.email='{email}'")
+		recommend.extend([x[0] for x in cursor.fetchall()])
+
+	if recommend:
+		recommend_emails = [x[0] for x in sorted(dict(Counter(recommend)).items(), key=lambda x: x[1], reverse=True)[:15]]
+	else:
+		recommend_emails = None
+
+	return render_template("friend.html", name=flask_login.current_user.id, friend_emails=friend_emails, recommend_emails=recommend_emails)
+
+
+@app.route('/find_friend', methods=['GET'])
+@flask_login.login_required
+def find_friend():
+	email = flask.request.args.get('email')
+	cursor = conn.cursor()
+	cursor.execute(f"select email from users where email like '%{email}%'")
+
+	search_emails = [x[0] for x in cursor.fetchall() if x[0] != flask_login.current_user.id]
+	message = f"A total of {len(search_emails)} other users were found"
+	return render_template("find_friend.html", search_emails=search_emails, message=message)
+
+
+@app.route('/add_friend_api', methods=['GET'])
+@flask_login.login_required
+def add_friend_api():
+	email = flask.request.args.get('email')
+	cursor = conn.cursor()
+	cursor.execute(f"select user_id from users where email = '{flask_login.current_user.id}'")
+	user_id = cursor.fetchone()[0]
+
+	cursor.execute(f"select user_id from users where email = '{email}'")
+	friend_uid = cursor.fetchone()[0]
+
+	cursor.execute(f"INSERT INTO friends_with VALUES({user_id}, {friend_uid})")
+	cursor.close()
+	return "Successfully add a friend<br><a href='/'>Home</a>"
+
+"""Friends end"""
 
 
 
@@ -271,11 +389,11 @@ def hello():
 	return render_template('hello.html', message='Welecome to Photoshare')
 
 #friends page
-@app.route("/friends", methods=['GET'])
-@flask_login.login_required
-def getFriendsPage():
-	uid=getUserIdFromEmail(flask_login.current_user.id)
-	return render_template('friends.html',friends=getFriends(uid))
+#@app.route("/getfriends")
+#@flask.login.login_required
+#def getFriendsPage():
+	#uid=getUserIdFromEmail(flask_login.current_user.id)
+	#return render_template('friends.html',friends=getFriends(uid))
 
 #add friend
 #@app.route("/addfriend")
