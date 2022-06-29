@@ -9,6 +9,7 @@
 # see links for further understanding
 ###################################################
 
+import email
 import flask
 from flask import Flask, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
@@ -176,7 +177,6 @@ def getUserAlbums(uid):
 	cursor.execute("SELECT album_id,album_name FROM albums WHERE user_id = '{0}'".format(uid))
 	return cursor.fetchall()
 
-
 def getFriends(uid):
 	cursor=conn.cursor()
 	cursor.execute("SELECT u.firstname,u.lastname FROM users u WHERE u.user_id IN(select f.friend2_id FROM friends f where f.friend1_id='{0}')".format(uid))
@@ -186,9 +186,6 @@ def getPicturesbyAlbum(album_id):
 	cursor=conn.cursor()
 	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures WHERE album_id = '{0}'".format(album_id))
 	return cursor.fetchall() #NOTE return a list of tuples, [(imgdata, pid, caption), ...]
-
-
-
 
 
 
@@ -268,7 +265,7 @@ def delete_album():
 #default page
 @app.route("/", methods=['GET'])
 def hello():
-	return render_template('hello.html', message='Welecome to Photoshare')
+	return render_template('hello.html', message='Welcome to Photoshare')
 
 #friends page
 @app.route("/friends", methods=['GET'])
@@ -276,6 +273,21 @@ def hello():
 def getFriendsPage():
 	uid=getUserIdFromEmail(flask_login.current_user.id)
 	return render_template('friends.html',friends=getFriends(uid))
+
+@app.route("/add_friend", methods=['POST'])	
+@flask_login.login_required
+def add_friend():
+	friend_email=request.form.get('email')
+	friendid=getUserIdFromEmail(friend_email)
+	uid=getUserIdFromEmail(flask_login.current_user.id)
+	cursor=conn.cursor()
+	cursor.execute("INSERT INTO `photoshare`.`friends` (`friend1_id`, `friend2_id`) VALUES ({0},{1})".format(uid,friendid))
+	conn.commit()
+	return render_template('friends.html',friends=getFriends(uid))
+
+
+
+
 
 #add friend
 #@app.route("/addfriend")
