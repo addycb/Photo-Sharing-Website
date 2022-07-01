@@ -555,6 +555,7 @@ def getComments(photo_id):
 	return cursor.fetchall()
 
 def setComment(user_id,picture_id,comment):
+	cursor=conn.cursor()
 	cursor.execute("INSERT INTO comments (create_user, picture_id,content) VALUES (%s, %s,%s)", (user_id,picture_id,comment))
 	conn.commit()
 
@@ -566,6 +567,20 @@ def get_album():
 	albumid=request.form.get('albumid')
 	pictures=getPicturesbyAlbum(albumid)
 	return render_template('album.html',photos=pictures,base64=base64)
+
+def populatephotos():
+	cursor=conn.cursor()
+	cursor.execute("SELECT imgdata, picture_id, caption, album_id FROM pictures ORDER BY RAND() LIMIT 20")
+	return cursor.fetchall()
+
+@app.route("/browse", methods=['GET'])
+def browsephotos():
+	photos=populatephotos()
+	return render_template('browse.html',photos=photos,base64=base64)
+
+
+
+
 
 @app.route("/likepicture", methods=['POST'])
 @flask_login.login_required
