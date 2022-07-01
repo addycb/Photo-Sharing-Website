@@ -180,7 +180,7 @@ def getUserAlbums(uid):
 
 def getFriends(uid):
 	cursor=conn.cursor()
-	cursor.execute("SELECT u.firstname,u.lastname FROM users u WHERE u.user_id IN(select f.friend2_id FROM friends f where f.friend1_id='{0}')".format(uid))
+	cursor.execute("SELECT u.firstname,u.lastname,u.email FROM users u WHERE u.user_id IN(select f.friend2_id FROM friends f where f.friend1_id='{0}')".format(uid))
 	return cursor.fetchall()
 
 def getPicturesbyAlbum(album_id):
@@ -412,6 +412,18 @@ def add_friend():
 	cursor.execute("INSERT INTO `photoshare`.`friends` (`friend1_id`, `friend2_id`) VALUES ({0},{1})".format(uid,friendid))
 	conn.commit()
 	return render_template('friends.html',friends=getFriends(uid))
+
+@app.route("/remove_friend", methods=['POST'])
+@flask_login.login_required
+def remove_friend():
+	friend_email=request.form.get('email')
+	friendid=getUserIdFromEmail(friend_email)
+	uid=getUserIdFromEmail(flask_login.current_user.id)
+	cursor=conn.cursor()
+	cursor.execute("DELETE FROM friends f where f.friend1_id='{0}' and f.friend2_id='{1}'".format(uid,friendid))
+	conn.commit()
+	return render_template('friends.html',friends=getFriends(uid))
+	
 
 #add friend
 #@app.route("/addfriend")
