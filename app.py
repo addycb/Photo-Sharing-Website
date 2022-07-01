@@ -432,8 +432,6 @@ def add_friend_api():
 """Friends end"""
 
 
-
-
 #end photo uploading code
 
 #default page
@@ -484,6 +482,69 @@ def get_picturestuff():
 		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True)
 	else:
 		return render_template('picture.html',photo=photo,base64=base64,likes=likes)
+
+@app.route('/tag_search', methods=['GET', 'POST'])
+def tag_search():
+	if request.method == 'POST':
+
+		tags = request.form.get('tags')
+		all_tags = tags.split()
+
+		return render_template('tag_search.html', photos=getTaggedPhotos(all_tags))
+
+	return render_template('tag_search.html')
+
+@app.route('/pictures', methods=['GET','POST'])
+def comment():
+	
+	if  getUserIdFromEmail(flask_login.current_user) == -1:
+		uid = -1
+		name = 'Anonymous'
+		#cursor = conn.cursor()
+		#cursor.execute("INSERT INTO Users(user_id, first_name) VALUES ('{0}', '{1}')".format(uid, name))
+	else:
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+	if request.method == 'POST':
+		
+		photo_user_id = request.form.get('user_id')
+		photo_user_id = int(photo_user_id)
+		if uid - photo_user_id == 0:
+			return render_template('hello.html', message='You cant comment on your own photo!', user=uid, photos=getAllPhotos())
+		else:
+			photo_id = request.form.get('picture_id')
+			comment = request.form.get('comment')
+			date = time.strftime('%Y-%m-%d')
+			cursor = conn.cursor()
+			cursor.execute("INSERT INTO Comments(user_id, date_written, words) VALUES ('{0}', '{1}', '{2}')".format(uid, date, comment))
+			conn.commit()
+			comment_id = cursor.lastrowid
+
+			cursor.execute("INSERT INTO Commented_on(comment_id, picture_id) VALUES ('{0}', '{1}')".format(comment_id,photo_id))
+			conn.commit()
+
+			return render_template('hello.html', message='Comment added!', user=uid, photos=getAllPhotos())
+
+	return render_template('hello.html', message='Here are the most recent photos',user=uid, photos=getAllPhotos())
+
+def getComments(picture_id):
+	cursor = conn.cursor()
+	cursor.execute("SELECT C.words, U.first_name, U.last_name, C.date_written FROM Users U, Comments C, Commented_On CO WHERE U.user_id = C.user_id AND C.comment_id = CO.comment_id AND CO.picture_id = '{0}' ORDER BY C.comment_id".format(picture_id))
+	return cursor.fetchall()
+
+def getLikes(picture_id):
+	cursor = conn.cursor()
+	cursor.execute("SELECT COUNT(user_id) FROM Liked_Pictures WHERE picture_id = '{0}'".format(picture_id))
+	return cursor.fetchall()
+def getTags(picture_id):
+	cursor = conn.cursor()
+	cursor.execute("SELECT T.tag FROM Tags T, Tagged_Picture TP WHERE T.tag_id = TP.tag_id AND TP.picture_id = '{0}'".format(picture_id))
+	return cursor.fetchall()
+
+
+def mostRecentUserPhotos(uid):
+	cursor = conn.cursor()
+	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption, U.first_name, U.last_name, P.user_id FROM Pictures P, Users U WHERE P.user_id = U.user_id AND P.user_id = '{0}' ORDER BY P.picture_id DESC".format(uid))
+	return cursor.fetchall()
 
 
 	
