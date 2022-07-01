@@ -145,6 +145,10 @@ def register_user():
 		print("couldn't find all tokens")
 		return flask.redirect(flask.url_for('register'))
 
+def getPicturebyID(picture_id):
+	cursor=conn.cursor()
+	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures p where p.picture_id='{0}'".format(picture_id))
+	return cursor.fetchone()
 def getUsersPhotos(uid):
 	cursor = conn.cursor()
 	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures p,Albums a WHERE p.album_id=a.album_id AND a.user_id='{0}'".format(uid))
@@ -428,8 +432,9 @@ def remove_friend():
 @app.route("/picture", methods=['POST'])
 @flask_login.login_required
 def get_picturestuff():
-	picture=request.form.get('picture')
-	return render_template('picture.html',picture)
+	pictureid=request.form.get('picture')
+	photo=getPicturebyID(pictureid)
+	return render_template('picture.html',photo=photo,base64=base64)
 
 
 

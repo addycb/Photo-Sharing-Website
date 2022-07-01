@@ -1,4 +1,4 @@
 {% if photo%}
     <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}'/></li>
-    <h2>photo[2]</h2>
+    <h2>{{photo[2]}}</h2>
 {% endif %}
