@@ -10,32 +10,29 @@
     {% endif %}
 
 
+    <h2>My Friends: </h2>
+        <ul>
+        {% for friend_email in friend_emails %}
+            <li>{{friend_email}}</li>
+        {% endfor %}
+        </ul>
+
     {% if friends%} 
     <h2>Here are your friends</h2>
         <ul>
-        {% for friend in friends %}
+        {% for friend in friends%}
             <li>{{friend}} </li>
         {% endfor %}
+        {%else%}
+        <h2>No friends</h2>
         </ul>
-    {%else%}
-    <h2>No friends</h2>
     {% endif %}
 
-    
     <h1>Search User</h1>
         <form method='POST' action='add_friend'>
             <input type="email" name="email" /><br />
             <input type='submit'></input>
         </form>
-
-        
-    <!--
-    <h1>Search User</h1>
-        <form action='find_friend' method='GET'>
-            <input type='text' name='email' placeholder='email'></input>
-            <input type='submit' name='submit' value="find the user"></input>
-        </form>
-    -->
     <a href='/'>Home</a>
 </body>
 </html>
