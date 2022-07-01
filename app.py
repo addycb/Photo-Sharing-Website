@@ -180,7 +180,7 @@ def getUserAlbums(uid):
 
 def getFriends(uid):
 	cursor=conn.cursor()
-	cursor.execute("SELECT u.firstname,u.lastname FROM users u WHERE u.user_id IN(select f.friend2_id FROM friends f where f.friend1_id='{0}')".format(uid))
+	cursor.execute("SELECT u.firstname,u.lastname,u.email FROM users u WHERE u.user_id IN(select f.friend2_id FROM friends f where f.friend1_id='{0}')".format(uid))
 	return cursor.fetchall()
 
 def getPicturesbyAlbum(album_id):

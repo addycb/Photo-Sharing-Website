@@ -10,15 +10,11 @@
     {% endif %}
 
 
-    <h2>My Friends: </h2>
-        <ul>
-        {% for friend_email in friend_emails %}
-            <li>{{friend_email}}</li>
-        {% endfor %}
-        </ul>
+    
 
-    {% if friends%} 
+   
     <h2>Here are your friends</h2>
+    {% if friends%} 
         <ul>
         {% for friend in friends%}
             <li>{{friend}} </li>
@@ -28,12 +24,12 @@
         </ul>
     {% endif %}
 
-    <h1>Add Friend</h1>
+    <h1>Add Friend by Email</h1>
         <form method='POST' action='add_friend'>
             <input type="email" name="email" /><br />
             <input type='submit'></input>
         </form>
-    <h1>Remove Friend</h1>
+    <h1>Remove Friend by Email</h1>
         <form method='POST' action='remove_friend'>
             <input type="email" name="email" /><br />
             <input type='submit'></input>
