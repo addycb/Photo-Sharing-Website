@@ -10,7 +10,6 @@
 ###################################################
 
 import email
-from inspect import getcomments
 import flask
 from flask import Flask, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
@@ -479,7 +478,7 @@ def get_picturestuff():
 	likes=getlikesbypicture(pictureid)
 	uid=getUserIdFromEmail(flask_login.current_user.id)
 	albumowner=getalbumowner(albumid)
-	comments=getcomments(pictureid)
+	comments=getComments(pictureid)
 	if(albumowner==uid):
 		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments)
 	else:
@@ -551,8 +550,8 @@ def getLikes(picture_id):
 	return cursor.fetchall()
 
 def getComments(photo_id):
-	cursor=conn.cursor("SELECT c.content, c.createuser FROM comments c WHERE c.picture_id='{0}'".format(photo_id))
-	cursor.execute("")
+	cursor=conn.cursor()
+	cursor.execute("SELECT c.content, c.create_user FROM comments c WHERE c.picture_id='{0}'".format(photo_id))
 	return cursor.fetchall()
 
 def setComment(user_id,picture_id,comment):
