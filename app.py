@@ -424,6 +424,22 @@ def remove_friend():
 	conn.commit()
 	return render_template('friends.html',friends=getFriends(uid))
 	
+#photo display
+@app.route("/picture", methods=['POST'])
+@flask_login.login_required
+def get_picturestuff():
+	picture=request.form.get('picture')
+	return render_template('picture.html',picture)
+
+
+
+@app.route("/album", methods=['POST'])
+@flask_login.login_required
+def get_album():
+	albumid=request.form.get('albumid')
+	pictures=getPicturesbyAlbum(albumid)
+	return render_template('album.html',photos=pictures,base64=base64)
+
 
 #add friend
 #@app.route("/addfriend")

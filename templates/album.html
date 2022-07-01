@@ -1,0 +1,14 @@
+<!doctype html>
+
+{% if photos %}
+<h2>Here are your photos</h2>
+    <ul>
+    {% for photo in photos %}
+
+        <li>
+        <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}'/></li>
+    {% endfor %}
+    </ul>
+{%else%}
+    <h2>No photos in this album</h2>
+{% endif %}
