@@ -145,9 +145,16 @@ def register_user():
 		print("couldn't find all tokens")
 		return flask.redirect(flask.url_for('register'))
 
+
+
+
+
+#def deleteuser(user_id):
+	#delete photos,
+
 def getPicturebyID(picture_id):
 	cursor=conn.cursor()
-	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures p where p.picture_id='{0}'".format(picture_id))
+	cursor.execute("SELECT imgdata, picture_id, caption, album_id FROM Pictures p where p.picture_id='{0}'".format(picture_id))
 	return cursor.fetchone()
 def getUsersPhotos(uid):
 	cursor = conn.cursor()
@@ -189,13 +196,21 @@ def getFriends(uid):
 
 def getPicturesbyAlbum(album_id):
 	cursor=conn.cursor()
-	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures WHERE album_id = '{0}'".format(album_id))
+	cursor.execute("SELECT imgdata, picture_id, caption, album_id FROM Pictures WHERE album_id = '{0}'".format(album_id))
 	return cursor.fetchall() #NOTE return a list of tuples, [(imgdata, pid, caption), ...]
 
+def likepicture(uid,picture_id):
+	cursor=conn.cursor()
+	cursor.execute("INSERT INTO liked_pictures (picture_id, user_id) VALUES (%s, %s)", (picture_id,uid))
+	conn.commit()
 
+def getlikesbypicture(picture_id):
+	cursor.execute("SELECT COUNT(picture_id) FROM liked_pictures WHERE picture_id='{0}'".format(picture_id))
+	return cursor.fetchone()
 
-
-
+def unlikepicture(uid,picture_id):
+	cursor.execute("DELETE FROM liked_pictures WHERE picture_id='{0}' and user_id='{1}'".format(picture_id,uid))
+	conn.commit()
 
 
 #def getPicturebyTag(tag):
@@ -229,6 +244,33 @@ def upload_file():
 		return render_template('upload.html',albums=getUserAlbums(uid))
 #end photo uploading code
 
+def removeallikes(pictureid):
+	cursor=conn.cursor()
+	cursor.execute("DELETE FROM liked_pictures where picture_id='{0}'".format(pictureid))
+	conn.commit
+
+def deletephoto(pictureid):
+	removeallikes(pictureid)
+	cursor=conn.cursor()
+	cursor.execute("DELETE FROM pictures where picture_id='{0}'".format(pictureid))
+	conn.commit
+
+def getalbumowner(albumid):
+	cursor=conn.cursor()
+	cursor.execute("SELECT a.user_id from albums a where a.album_id='{0}'".format(albumid))
+	return cursor.fetchone()[0]
+
+
+@app.route('/photodelete', methods=['post'])
+@flask_login.login_required
+def delete_photo():
+	pictureid = request.form.get('pictureid')
+	deletephoto(pictureid)
+	albumid=request.form.get('albumid')
+	pictures=getPicturesbyAlbum(albumid)
+	return render_template('album.html',photos=pictures,base64=base64)
+
+
 @app.route('/albums', methods=['GET'])
 @flask_login.login_required
 def albumpage():
@@ -257,7 +299,7 @@ def delete_album():
 		uid = getUserIdFromEmail(flask_login.current_user.id)
 		album_name=request.form.get('album_name')
 		cursor=conn.cursor()
-		cursor.execute("DELETE FROM Albums a where a.album_name='{0}' and a.user_id='{1}'".format(album_name,uid))
+		cursor.execute("DELETE FROM albums a where a.album_name='{0}' and a.user_id='{1}'".format(album_name,uid))
 		conn.commit()
 		return render_template('albums.html',name=flask_login.current_user.id,message='Album deleted!', albums=getUserAlbums(uid), base64=base64)
 	else:
@@ -433,9 +475,18 @@ def remove_friend():
 @flask_login.login_required
 def get_picturestuff():
 	pictureid=request.form.get('picture')
+	albumid=request.form.get('albumid')
 	photo=getPicturebyID(pictureid)
-	return render_template('picture.html',photo=photo,base64=base64)
+	likes=getlikesbypicture(pictureid)
+	uid=getUserIdFromEmail(flask_login.current_user.id)
+	albumowner=getalbumowner(albumid)
+	if(albumowner==uid):
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True)
+	else:
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes)
 
+
+	
 
 
 @app.route("/album", methods=['POST'])
@@ -444,6 +495,30 @@ def get_album():
 	albumid=request.form.get('albumid')
 	pictures=getPicturesbyAlbum(albumid)
 	return render_template('album.html',photos=pictures,base64=base64)
+
+@app.route("/likepicture", methods=['POST'])
+@flask_login.login_required
+def like_picture():
+	pictureid=request.form.get('pictureid')
+	uid=getUserIdFromEmail(flask_login.current_user.id)
+	likepicture(uid,pictureid)
+	photo=getPicturebyID(pictureid)	
+	likes=getlikesbypicture(pictureid)
+	return render_template('picture.html',photo=photo,base64=base64,likes=likes)
+
+@app.route("/unlikepicture", methods=['POST'])
+@flask_login.login_required
+def unlike_picture():
+	pictureid=request.form.get('pictureid')
+	uid=getUserIdFromEmail(flask_login.current_user.id)
+	unlikepicture(uid,pictureid)
+	photo=getPicturebyID(pictureid)	
+	likes=getlikesbypicture(pictureid)
+	return render_template('picture.html',photo=photo,base64=base64,likes=likes)
+
+
+
+
 
 
 #add friend

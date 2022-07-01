@@ -2,3 +2,25 @@
     <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}'/></li>
     <h2>{{photo[2]}}</h2>
 {% endif %}
+{%if likes%}
+<h2>{{likes[0]}} likes</h2>
+{% endif %}
+<form method="POST" enctype="multipart/form-data" action="/likepicture">
+    <input type="hidden" name="pictureid" value={{photo[1]}}>
+    <input type="hidden" name="albumid" value={{photo[3]}}>
+    <input type="submit" value="Like" />
+</form>
+<form method="POST" enctype="multipart/form-data" action="/unlikepicture">
+    <input type="hidden" name="pictureid" value={{photo[1]}}>
+    <input type="hidden" name="albumid" value={{photo[3]}}>
+    <input type="submit" value="Unlike" />
+</form>
+{%if owned%}
+<form method="POST" enctype="multipart/form-data" action="/photodelete">
+    <input type="hidden" name="pictureid" value={{photo[1]}}>
+    <input type="hidden" name="albumid" value={{photo[3]}}>
+    <input type="submit" value="Delete" />
+</form>
+{% else %}
+<!--#Add comments-->
+{% endif %}
