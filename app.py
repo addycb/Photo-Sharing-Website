@@ -10,6 +10,7 @@
 ###################################################
 
 import email
+from inspect import getcomments
 import flask
 from flask import Flask, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
@@ -478,10 +479,11 @@ def get_picturestuff():
 	likes=getlikesbypicture(pictureid)
 	uid=getUserIdFromEmail(flask_login.current_user.id)
 	albumowner=getalbumowner(albumid)
+	comments=getcomments(pictureid)
 	if(albumowner==uid):
-		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True)
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments)
 	else:
-		return render_template('picture.html',photo=photo,base64=base64,likes=likes)
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments)
 
 @app.route('/tag_search', methods=['GET', 'POST'])
 def tag_search():
@@ -493,7 +495,7 @@ def tag_search():
 		return render_template('tag_search.html', photos=getTaggedPhotos(all_tags))
 
 	return render_template('tag_search.html')
-
+"""
 @app.route('/pictures', methods=['GET','POST'])
 def comment():
 	
@@ -531,23 +533,32 @@ def getComments(picture_id):
 	cursor.execute("SELECT C.words, U.first_name, U.last_name, C.date_written FROM Users U, Comments C, Commented_On CO WHERE U.user_id = C.user_id AND C.comment_id = CO.comment_id AND CO.picture_id = '{0}' ORDER BY C.comment_id".format(picture_id))
 	return cursor.fetchall()
 
-def getLikes(picture_id):
-	cursor = conn.cursor()
-	cursor.execute("SELECT COUNT(user_id) FROM Liked_Pictures WHERE picture_id = '{0}'".format(picture_id))
-	return cursor.fetchall()
+
 def getTags(picture_id):
 	cursor = conn.cursor()
 	cursor.execute("SELECT T.tag FROM Tags T, Tagged_Picture TP WHERE T.tag_id = TP.tag_id AND TP.picture_id = '{0}'".format(picture_id))
 	return cursor.fetchall()
-
+"""
 
 def mostRecentUserPhotos(uid):
 	cursor = conn.cursor()
 	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption, U.first_name, U.last_name, P.user_id FROM Pictures P, Users U WHERE P.user_id = U.user_id AND P.user_id = '{0}' ORDER BY P.picture_id DESC".format(uid))
 	return cursor.fetchall()
 
+def getLikes(picture_id):
+	cursor = conn.cursor()
+	cursor.execute("SELECT COUNT(user_id) FROM Liked_Pictures WHERE picture_id = '{0}'".format(picture_id))
+	return cursor.fetchall()
 
-	
+def getComments(photo_id):
+	cursor=conn.cursor("SELECT c.content, c.createuser FROM comments c WHERE c.picture_id='{0}'".format(photo_id))
+	cursor.execute("")
+	return cursor.fetchall()
+
+def setComment(user_id,picture_id,comment):
+	cursor.execute("INSERT INTO comments (create_user, picture_id,content) VALUES (%s, %s,%s)", (user_id,picture_id,comment))
+	conn.commit()
+
 
 
 @app.route("/album", methods=['POST'])
@@ -561,24 +572,52 @@ def get_album():
 @flask_login.login_required
 def like_picture():
 	pictureid=request.form.get('pictureid')
-	uid=getUserIdFromEmail(flask_login.current_user.id)
-	likepicture(uid,pictureid)
+	user_id=getUserIdFromEmail(flask_login.current_user.id)
+	likepicture(user_id,pictureid)
 	photo=getPicturebyID(pictureid)	
 	likes=getlikesbypicture(pictureid)
-	return render_template('picture.html',photo=photo,base64=base64,likes=likes)
+	comments=getComments(pictureid)
+	albumid=request.form.get('albumid')
+	albumowner=getalbumowner(albumid)
+	if(albumowner==user_id):
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments)
+	else:
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments)
+
 
 @app.route("/unlikepicture", methods=['POST'])
 @flask_login.login_required
 def unlike_picture():
 	pictureid=request.form.get('pictureid')
-	uid=getUserIdFromEmail(flask_login.current_user.id)
-	unlikepicture(uid,pictureid)
+	user_id=getUserIdFromEmail(flask_login.current_user.id)
+	unlikepicture(user_id,pictureid)
 	photo=getPicturebyID(pictureid)	
 	likes=getlikesbypicture(pictureid)
-	return render_template('picture.html',photo=photo,base64=base64,likes=likes)
+	comments=getComments(pictureid)
+	albumid=request.form.get('albumid')
+	albumowner=getalbumowner(albumid)
+	if(albumowner==user_id):
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments)
+	else:
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments)
 
 
-
+app.route("setcomment", methods=['POST'])
+@flask_login.login_required
+def set_comment():
+	pictureid=request.form.get('pictureid')
+	comment=request.form.get('comment')
+	user_id=getUserIdFromEmail(flask_login.current_user.id)
+	setComment(user_id,pictureid,comment)
+	photo=getPicturebyID(pictureid)	
+	likes=getlikesbypicture(pictureid)
+	comments=getComments(pictureid)
+	albumid=request.form.get('albumid')
+	albumowner=getalbumowner(albumid)
+	if(albumowner==user_id):
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments)
+	else:
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments)
 
 
 

@@ -22,5 +22,16 @@
     <input type="submit" value="Delete" />
 </form>
 {% else %}
-<!--#Add comments-->
+    <!--#Add comments-->
+<form method="POST" enctype="multipart/form-data" action="/photodelete">
+    <input type="hidden" name="pictureid" value={{photo[1]}}>
+    <input type="hidden" name="albumid" value={{photo[3]}}>
+    <input type="text" name="comment" placeholder="Enter comment">
+    <input type="submit" value="Make Comment" />
+</form>
+{% endif %}
+{%if comments%}
+    {% for comment in comments %}
+   <li><h1>{{comment[0]}}</h1>
+    <h1>{{comment[1]}}</h1></li>   
 {% endif %}
