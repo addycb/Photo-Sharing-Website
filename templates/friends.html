@@ -28,8 +28,13 @@
         </ul>
     {% endif %}
 
-    <h1>Search User</h1>
+    <h1>Add Friend</h1>
         <form method='POST' action='add_friend'>
+            <input type="email" name="email" /><br />
+            <input type='submit'></input>
+        </form>
+    <h1>Remove Friend</h1>
+        <form method='POST' action='remove_friend'>
             <input type="email" name="email" /><br />
             <input type='submit'></input>
         </form>

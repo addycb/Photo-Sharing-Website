@@ -413,6 +413,18 @@ def add_friend():
 	conn.commit()
 	return render_template('friends.html',friends=getFriends(uid))
 
+@app.route("/remove_friend", methods=['POST'])
+@flask_login.login_required
+def remove_friend():
+	friend_email=request.form.get('email')
+	friendid=getUserIdFromEmail(friend_email)
+	uid=getUserIdFromEmail(flask_login.current_user.id)
+	cursor=conn.cursor()
+	cursor.execute("DELETE FROM friends f where f.friend1_id='{0}' and f.friend2_id='{1}'".format(uid,friendid))
+	conn.commit()
+	return render_template('friends.html',friends=getFriends(uid))
+	
+
 #add friend
 #@app.route("/addfriend")
 #@flask_login.login_required
