@@ -31,8 +31,9 @@
 {% endif %}
 {%if comments%}
     {% for comment in comments %}
-   <li><h1>{{comment[0]}}</h1>
-    <h1>{{comment[1]}}</h1></li>   
+   <li><h1>{{comment[1]}} said:</h1>
+    <h1>{{comment[0]}}</h1>
+    <hi>on {{comment[2]}}</hi></li>   
     {% endfor %}
 {% else %}
 <h1>No Comments</h1>

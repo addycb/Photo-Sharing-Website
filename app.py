@@ -10,6 +10,7 @@
 ###################################################
 
 import email
+from datetime import datetime
 from turtle import home
 import flask
 from flask import Flask, Response, request, render_template, redirect, url_for
@@ -25,7 +26,7 @@ app.secret_key = 'super secret string'  # Change this!
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = 'rooted!!lel4'
-app.config['MYSQL_DATABASE_DB'] = 'photoshare'
+app.config['MYSQL_DATABASE_DB'] = 'newschema'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
 
@@ -279,7 +280,7 @@ def delete_photo():
 	albumname=getAlbumNamebyId(albumid)
 	return render_template('album.html',photos=pictures,base64=base64,albumname=albumname)
 
-@app.route('/otherprofile', methods=['GET'])
+@app.route('/otherprofile', methods=['POST'])
 @flask_login.login_required
 def other_profile():
 	albumid=request.form.get('albumid')
@@ -562,19 +563,20 @@ def mostRecentUserPhotos(uid):
 	cursor.execute("SELECT P.imgdata, P.picture_id, P.caption, U.first_name, U.last_name, P.user_id FROM Pictures P, Users U WHERE P.user_id = U.user_id AND P.user_id = '{0}' ORDER BY P.picture_id DESC".format(uid))
 	return cursor.fetchall()
 
-def getLikes(picture_id):
+def getLikes(picture_id):			
 	cursor = conn.cursor()
 	cursor.execute("SELECT COUNT(user_id) FROM Liked_Pictures WHERE picture_id = '{0}'".format(picture_id))
 	return cursor.fetchall()
 
 def getComments(photo_id):
 	cursor=conn.cursor()
-	cursor.execute("SELECT c.content, c.create_user FROM comments c WHERE c.picture_id='{0}'".format(photo_id))
+	cursor.execute("SELECT c.content, c.comment_maker,c.create_date FROM comments c WHERE c.picture_id='{0}'".format(photo_id))
 	return cursor.fetchall()
 
 def setComment(user_id,picture_id,comment):
 	cursor=conn.cursor()
-	cursor.execute("INSERT INTO comments (comment_maker, picture_id,content) VALUES (%s, %s,%s)", (user_id,picture_id,comment))
+	date=str(datetime.now())
+	cursor.execute("INSERT INTO comments (comment_maker, picture_id,content,create_date) VALUES (%s, %s,%s,%s)", (user_id,picture_id,comment,date))
 	conn.commit()
 
 def getAlbumNamebyId(album_id):

@@ -16,6 +16,6 @@
     <h2>No photos in this album</h2>
 {% endif %}
 <form method="POST" enctype="multipart/form-data" action="/otherprofile">
-    <input type="hidden" name="albumid" value={{photo[3]}}>
+    <input type="hidden" name="albumid" value={{photos[0][3]}}>
     <input type="submit" value="View All Albums From This User" />
 </form>
