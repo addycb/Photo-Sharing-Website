@@ -1,10 +1,10 @@
-{% if photo%}
-    <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}'/></li>
-    <h2>{{photo[2]}}</h2>
-{% endif %}
-{%if likes%}
+<img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}'/></li>
+<h2>{{photo[2]}}</h2>
 <h2>{{likes[0]}} likes</h2>
-{% endif %}
+<form method="POST" enctype="multipart/form-data" action="/album">
+    <input type="hidden" name="albumid" value={{photo[3]}}>
+    <input type="submit" value="Go to Album" />
+</form>
 <form method="POST" enctype="multipart/form-data" action="/likepicture">
     <input type="hidden" name="pictureid" value={{photo[1]}}>
     <input type="hidden" name="albumid" value={{photo[3]}}>
@@ -22,7 +22,7 @@
     <input type="submit" value="Delete" />
 </form>
 {% else %}
-<form method="POST" enctype="multipart/form-data" action="/photodelete">
+<form method="POST" enctype="multipart/form-data" action="/setcomment">
     <input type="hidden" name="pictureid" value={{photo[1]}}>
     <input type="hidden" name="albumid" value={{photo[3]}}>
     <input type="text" name="comment" placeholder="Enter comment">

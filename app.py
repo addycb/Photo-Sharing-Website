@@ -10,6 +10,7 @@
 ###################################################
 
 import email
+from turtle import home
 import flask
 from flask import Flask, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
@@ -125,7 +126,7 @@ def register_user():
 		password=request.form.get('password')
 		firstname=request.form.get('firstname')
 		lastname=request.form.get('lastname')
-		dob=request.form.get('date_of_birth')
+		date_of_birth=request.form.get('date_of_birth')
 		hometown=request.form.get('hometown')
 		gender=request.form.get('gender')
 	except:
@@ -134,7 +135,7 @@ def register_user():
 	cursor = conn.cursor()
 	test =  isEmailUnique(email)
 	if test:
-		print(cursor.execute("INSERT INTO Users (email, password, firstname, lastname, date_of_birth, hometown, gender) VALUES ('{0}', '{1}','{2}', '{3}','{4}', '{5}',)".format(email, password)))
+		print(cursor.execute("INSERT INTO Users (email, password, firstname, lastname, dob, hometown, gender) VALUES (%s, %s,%s,%s,%s,%s,%s)",(email, password,firstname,lastname,date_of_birth,hometown,gender)))
 		conn.commit()
 		#log user in
 		user = User()
@@ -260,6 +261,13 @@ def getalbumowner(albumid):
 	cursor.execute("SELECT a.user_id from albums a where a.album_id='{0}'".format(albumid))
 	return cursor.fetchone()[0]
 
+def getuserinfo(userid):
+	cursor=conn.cursor()
+	cursor.execute("SELECT a.firstname,a.lastname,a.gender,a.dob,a.hometown from users a where a.user_id='{0}'".format(userid))
+	return cursor.fetchone()
+
+
+
 
 @app.route('/photodelete', methods=['post'])
 @flask_login.login_required
@@ -268,7 +276,17 @@ def delete_photo():
 	deletephoto(pictureid)
 	albumid=request.form.get('albumid')
 	pictures=getPicturesbyAlbum(albumid)
-	return render_template('album.html',photos=pictures,base64=base64)
+	albumname=getAlbumNamebyId(albumid)
+	return render_template('album.html',photos=pictures,base64=base64,albumname=albumname)
+
+@app.route('/otherprofile', methods=['GET'])
+@flask_login.login_required
+def other_profile():
+	albumid=request.form.get('albumid')
+	albumowner=getalbumowner(albumid)
+	user=getuserinfo(albumowner)
+	albums=getUserAlbums(albumowner)
+	return render_template('otherprofile.html',user=user, albums=albums)
 
 
 @app.route('/albums', methods=['GET'])
@@ -556,8 +574,14 @@ def getComments(photo_id):
 
 def setComment(user_id,picture_id,comment):
 	cursor=conn.cursor()
-	cursor.execute("INSERT INTO comments (create_user, picture_id,content) VALUES (%s, %s,%s)", (user_id,picture_id,comment))
+	cursor.execute("INSERT INTO comments (comment_maker, picture_id,content) VALUES (%s, %s,%s)", (user_id,picture_id,comment))
 	conn.commit()
+
+def getAlbumNamebyId(album_id):
+	cursor=conn.cursor()
+	cursor.execute("SELECT album_name from Albums a where a.album_id='{0}'".format(album_id))
+	return cursor.fetchone()[0]
+
 
 
 
@@ -566,7 +590,8 @@ def setComment(user_id,picture_id,comment):
 def get_album():
 	albumid=request.form.get('albumid')
 	pictures=getPicturesbyAlbum(albumid)
-	return render_template('album.html',photos=pictures,base64=base64)
+	albumname=getAlbumNamebyId(albumid)
+	return render_template('album.html',photos=pictures,base64=base64,albumname=albumname)
 
 def populatephotos():
 	cursor=conn.cursor()
@@ -616,7 +641,7 @@ def unlike_picture():
 		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments)
 
 
-app.route("setcomment", methods=['POST'])
+@app.route("/setcomment", methods=['POST'])
 @flask_login.login_required
 def set_comment():
 	pictureid=request.form.get('pictureid')

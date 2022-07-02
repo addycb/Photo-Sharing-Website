@@ -1,0 +1,18 @@
+<h1>User: {{User[0]}} {{User[1]}}</h1>
+<h1>Gender: {{User[2]}}</h1>
+<h1>DOB: {{User[3]}}</h1>
+<h1>Hometown: {{User[4]}}</h1>
+
+{% if albums %}
+<h2>Albums:</h2>
+    <ul>
+    {% for album in albums %}
+        <li>{{album}}</li>
+        <form method="POST" enctype="multipart/form-data" action="/otherprofile">
+            <input type="hidden" name="albumid" value={{album[0]}}>
+            <input type="submit" value="View" />
+        </form>
+    {% endfor %}
+    </ul>
+{% endif %}
+

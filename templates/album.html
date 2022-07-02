@@ -1,6 +1,6 @@
 <!doctype html>
 {% if photos %}
-<h2>Here are your photos</h2>
+<h2>Now Browsing Photos in: {{albumname}}</h2>
     <ul>
     {% for photo in photos %}
         <li>
@@ -15,3 +15,7 @@
 {%else%}
     <h2>No photos in this album</h2>
 {% endif %}
+<form method="POST" enctype="multipart/form-data" action="/otherprofile">
+    <input type="hidden" name="albumid" value={{photo[3]}}>
+    <input type="submit" value="View All Albums From This User" />
+</form>
