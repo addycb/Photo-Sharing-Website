@@ -1,0 +1,18 @@
+<h2>Top Ten Tags:</h2>
+{% for tag in tags %}
+<li>{{tag[0]}}</li>
+{% endfor %}
+<h2>Photos with these tags:</h2>
+{% if photos %} 
+    <ul>
+    {% for photo in photos %}
+        <li>
+        <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}'/></li>
+        <form method="POST" enctype="multipart/form-data" action="/picture">
+            <input type="hidden" name="picture" value={{photo[1]}}>
+            <input type="hidden" name="albumid" value={{photo[3]}}>
+            <input type="submit" value="View" />
+        </form>
+    {% endfor %}
+    </ul>
+{% endif %}

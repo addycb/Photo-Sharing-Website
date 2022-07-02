@@ -232,10 +232,7 @@ def upload_file():
 		imgfile = request.files['photo']
 		caption = request.form.get('caption')
 		imgdata =imgfile.read()
-		album_id=request.form.get('album_id')
-		#tags=request.form.get('tags')
-		#Add tags
-		# tags=tags.split(' ')
+		album_id=request.form.get('album_id')		
 		cursor = conn.cursor()
 		cursor.execute('''INSERT INTO Pictures (imgdata, caption, album_id) VALUES (%s, %s, %s )''', (imgdata, caption, album_id))
 		conn.commit()
@@ -253,6 +250,7 @@ def removeallikes(pictureid):
 
 def deletephoto(pictureid):
 	removeallikes(pictureid)
+	deletepictags(pictureid)
 	cursor=conn.cursor()
 	cursor.execute("DELETE FROM pictures where picture_id='{0}'".format(pictureid))
 	conn.commit
@@ -498,21 +496,15 @@ def get_picturestuff():
 	uid=getUserIdFromEmail(flask_login.current_user.id)
 	albumowner=getalbumowner(albumid)
 	comments=getComments(pictureid)
+	tags=getpictags(pictureid)
 	if(albumowner==uid):
-		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments)
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments,tags=tags)
 	else:
-		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments)
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments,tags=tags)
+	
 
-@app.route('/tag_search', methods=['GET', 'POST'])
-def tag_search():
-	if request.method == 'POST':
 
-		tags = request.form.get('tags')
-		all_tags = tags.split()
 
-		return render_template('tag_search.html', photos=getTaggedPhotos(all_tags))
-
-	return render_template('tag_search.html')
 """
 @app.route('/pictures', methods=['GET','POST'])
 def comment():
@@ -584,6 +576,121 @@ def getAlbumNamebyId(album_id):
 	cursor.execute("SELECT album_name from Albums a where a.album_id='{0}'".format(album_id))
 	return cursor.fetchone()[0]
 
+def addtag(photo_id,tagname):
+	cursor=conn.cursor()
+	cursor.execute("INSERT INTO picture_tags (picture_id,tag_name) VALUES (%s,%s)",(photo_id,tagname))
+	conn.commit()
+
+def removetag(picture_id,tagname):
+	cursor=conn.cursor()
+	cursor.execute("DELETE FROM picture_tags WHERE tag_name='{1}' and picture_id='{0}'".format(picture_id,tagname))
+	conn.commit()
+
+def deletepictags(picture_id):
+	cursor=conn.cursor()
+	cursor.execute("DELETE FROM picture_tags WHERE picture_id='{0}'".format(picture_id))
+	conn.commit()
+
+def searchbytag(tag):
+	cursor=conn.cursor()
+	cursor.execute("SELECT picture_id FROM picture_tags WHERE tag_name='{0}'".format(tag))
+	return cursor.fetchall()
+
+"""
+def searchbytags(tags):
+	tags=tags.split(',')
+	x=[]
+	for tag in tags:
+		x.append(searchbytags(tag))	
+	return x
+"""
+
+def getpopulartags():
+	cursor=conn.cursor()
+	cursor.execute("SELECT tag_name, count(tag_name) as 'num' FROM picture_tags GROUP BY tag_name ORDER BY num DESC LIMIT 10")
+	return cursor.fetchall()
+
+def getpictags(picture_id):
+	cursor=conn.cursor()
+	cursor.execute("SELECT tag_name FROM picture_tags where picture_id='{0}'".format(picture_id))
+	return cursor.fetchall()
+
+
+
+@app.route('/tag_search', methods=['POST','GET'])
+def tag_search():
+	if(request.method=='POST'):
+		tags = request.form.get('tags')
+		tags = tags.split(',')
+		photoids=[]
+		for tag in tags:
+			x=searchbytag(tag)
+			y=x[0]
+			z=y[0]
+			photoids.append(z)
+		photos=[]
+		photoids=list(set(photoids))
+		for photoid in photoids:
+			photos.append(getPicturebyID(photoid))
+		return render_template('tag_search.html', photos=photos,tags=tags,base64=base64)
+	return render_template('tag_search.html')
+
+
+@app.route("/topten", methods=['GET'])
+@flask_login.login_required
+def top_ten_tags():
+	tags=getpopulartags()
+	photoids=[]
+	for tag in tags:
+		x=searchbytag(tag[0])
+		y=x[0]
+		z=y[0]
+		photoids.append(z)
+	photos=[]
+	photoids=list(set(photoids))
+	for photoid in photoids:
+		photos.append(getPicturebyID(photoid))
+	return render_template('topten.html',photos=photos,tags=tags,base64=base64)
+
+
+
+@app.route("/tagadd", methods=['POST'])
+@flask_login.login_required
+def add_tag():
+	pictureid=request.form.get("pictureid")
+	tag=request.form.get("tag")
+	addtag(pictureid,tag)
+	user_id=getUserIdFromEmail(flask_login.current_user.id)
+	photo=getPicturebyID(pictureid)	
+	likes=getlikesbypicture(pictureid)
+	comments=getComments(pictureid)
+	albumid=request.form.get('albumid')
+	albumowner=getalbumowner(albumid)
+	tags=getpictags(pictureid)
+	if(albumowner==user_id):
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments,tags=tags)
+	else:
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments,tags=tags)
+
+
+
+@app.route("/tagremove", methods=['POST'])
+@flask_login.login_required
+def remove_tag():
+	pictureid=request.form.get("pictureid")
+	tag=request.form.get("tag")
+	removetag(pictureid,tag)
+	user_id=getUserIdFromEmail(flask_login.current_user.id)
+	photo=getPicturebyID(pictureid)	
+	likes=getlikesbypicture(pictureid)
+	comments=getComments(pictureid)
+	albumid=request.form.get('albumid')
+	albumowner=getalbumowner(albumid)
+	tags=getpictags(pictureid)
+	if(albumowner==user_id):
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments,tags=tags)
+	else:
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments,tags=tags)
 
 
 
@@ -620,10 +727,11 @@ def like_picture():
 	comments=getComments(pictureid)
 	albumid=request.form.get('albumid')
 	albumowner=getalbumowner(albumid)
+	tags=getpictags(pictureid)
 	if(albumowner==user_id):
-		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments)
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments,tags=tags)
 	else:
-		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments)
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments,tags=tags)
 
 
 @app.route("/unlikepicture", methods=['POST'])
@@ -637,10 +745,11 @@ def unlike_picture():
 	comments=getComments(pictureid)
 	albumid=request.form.get('albumid')
 	albumowner=getalbumowner(albumid)
+	tags=getpictags(pictureid)
 	if(albumowner==user_id):
-		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments)
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments,tags=tags)
 	else:
-		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments)
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments,tags=tags)
 
 
 @app.route("/setcomment", methods=['POST'])
@@ -655,11 +764,17 @@ def set_comment():
 	comments=getComments(pictureid)
 	albumid=request.form.get('albumid')
 	albumowner=getalbumowner(albumid)
+	tags=getpictags(pictureid)
 	if(albumowner==user_id):
-		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments)
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,owned=True,comments=comments,tags=tags)
 	else:
-		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments)
+		return render_template('picture.html',photo=photo,base64=base64,likes=likes,comments=comments,tags=tags)
 
+@app.route("/suggested", methods=['GET'])
+@flask_login.login_required
+def suggestedphotos():
+	photos=populatephotos()
+	return render_template('suggested.html',photos=photos,base64=base64)
 
 
 #add friend
