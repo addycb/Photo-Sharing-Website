@@ -1,6 +1,6 @@
 ######################################
-# author ben lawson <balawson@bu.edu>
-# Edited by: Craig Einstein <einstein@bu.edu>
+# Skeleton: ben lawson <balawson@bu.edu>
+# Edited by: Addison Baum <atomsk@bu.edu> and Scarlett Li (scartt@bu.edu)
 ######################################
 # Some code adapted from
 # CodeHandBook at http://codehandbook.org/python-web-application-development-using-flask-and-mysql/
@@ -9,15 +9,13 @@
 # see links for further understanding
 ###################################################
 
-import email
 from datetime import datetime
-from turtle import home
 import flask
-from flask import Flask, Response, request, render_template, redirect, url_for
+from flask import Flask, request, render_template
 from flaskext.mysql import MySQL
 import flask_login
 #for image uploading		
-import os, base64
+import base64
 
 mysql = MySQL()
 app = Flask(__name__)
@@ -25,10 +23,10 @@ app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'rooted!!lel4'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'yourpassword'
 app.config['MYSQL_DATABASE_DB'] = 'newschema'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
-mysql.init_app(app)
+mysql.init_app(app)	
 
 #begin code used for login
 login_manager = flask_login.LoginManager()
