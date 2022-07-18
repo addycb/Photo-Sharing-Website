@@ -1,5 +1,5 @@
 ######################################
-# Skeleton: ben lawson <balawson@bu.edu>
+# Skeleton: Ben Lawson <balawson@bu.edu>
 # Edited by: Addison Baum <atomsk@bu.edu> and Scarlett Li (scartt@bu.edu)
 ######################################
 # Some code adapted from
